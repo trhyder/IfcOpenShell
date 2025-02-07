@@ -70,7 +70,7 @@ class PanelSpy:
         return self
 
     def __call__(self, *args, **kwargs):
-        if self.spied_attr in ("row", "column", "box"):
+        if self.spied_attr in ("row", "column", "box", "separator"):
             return self
         elif self.spied_attr == "template_list":
             listtype_name, list_id, dataptr, propname, active_dataptr, active_propname = args
@@ -274,8 +274,8 @@ def i_see_the_prop_property(prop):
 @then(parsers.parse('I don\'t see the "{prop}" property'))
 def i_dont_see_the_prop_property(prop):
     panel_spy.refresh_spy()
-    assert [
-        p for p in panel_spy.spied_props if prop not in (p["name"], p["text"], p["icon"])
+    assert not [
+        p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
     ], f"Property {prop} not found in {panel_spy.spied_props}"
 
 
@@ -334,6 +334,7 @@ def the_name_list_has_total_items(name, total):
     assert False, f"List {name} not found in {panel_spy.spied_lists}"
 
 
+@given(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
     panel_spy.refresh_spy()
@@ -511,6 +512,7 @@ def i_evaluate_expression(expression):
     exec(expression)
 
 
+@given("I duplicate the selected objects")
 @when("I duplicate the selected objects")
 def i_duplicate_the_selected_objects():
     bpy.ops.bim.override_object_duplicate_move()
@@ -635,6 +637,7 @@ def i_am_on_frame_number(number):
     bpy.context.scene.frame_set(int(number))
 
 
+@given("I delete the selected objects")
 @when("I delete the selected objects")
 def i_delete_the_selected_objects():
     bpy.ops.bim.override_object_delete()
@@ -731,7 +734,7 @@ def the_object_name_has_a_representation_type_of_context(name, type, context):
     context, subcontext, target_view = context.split("/")
     rep = ifcopenshell.util.representation.get_representation(element, context, subcontext or None, target_view or None)
     assert rep
-    assert rep.RepresentationType == type
+    assert rep.RepresentationType == type, f"The object {name} does not have a {type} representation"
 
 
 @given(parsers.parse('the object "{name}" data is a "{type}" representation of "{context}"'))
@@ -741,7 +744,7 @@ def the_object_name_data_is_a_type_representation_of_context(name, type, context
     context, subcontext, target_view = context.split("/")
     rep = ifc.by_id(the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id)
     assert rep
-    assert rep.RepresentationType == type
+    assert rep.RepresentationType == type, f"The object {name} is not a {type} representation"
     assert rep.ContextOfItems.ContextType == context
     assert rep.ContextOfItems.ContextIdentifier == subcontext
     assert rep.ContextOfItems.TargetView == target_view
@@ -1349,7 +1352,6 @@ def run_test_code():
 @then(parsers.parse("I save sample test files"))
 def saving_sample_test_files(and_open_in_blender=None):
     filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
-    blend_filepath = f"{filepath}.blend"
     bpy.ops.bim.save_project(filepath=f"{filepath}.ifc", should_save_as=True)
     bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
 

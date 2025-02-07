@@ -43,7 +43,7 @@ class EnableReassignClass(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifc_class = obj.name.split("/")[0]
         context.active_object.BIMObjectProperties.is_reassigning_class = True
         ifc_products = [
@@ -93,11 +93,11 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
             objects = [bpy.data.objects.get(self.obj)]
         else:
             objects = set(context.selected_objects + [context.active_object])
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         root_props = context.scene.BIMRootProperties
         ifc_product: str = root_props.ifc_product
         ifc_class: str = root_props.ifc_class
-        type_ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class)), None)
+        type_ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class, self.file.schema)), None)
 
         predefined_type = root_props.ifc_predefined_type
         if predefined_type == "USERDEFINED":
@@ -212,7 +212,12 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 continue
 
             if self.should_add_representation and isinstance(obj.data, bpy.types.Mesh) and obj.data.polygons:
-                bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
+                if obj.scale != (1, 1, 1):
+                    if obj.data.users > 1:
+                        bpy.ops.object.make_single_user(
+                            object=True, obdata=True, material=False, animation=False, obdata_animation=False
+                        )
+                    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
                 if tool.Geometry.mesh_has_loose_geometry(obj.data):
                     self.report(
                         {"WARNING"},
