@@ -90,6 +90,7 @@ class AuthoringData:
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
+        cls.data["selected_ifc_types"] = cls.selected_ifc_types()
 
         # Only after .active_material_usage() and .active_class()
         cls.data["is_flippable_element"] = cls.is_flippable_element()
@@ -367,6 +368,17 @@ class AuthoringData:
                     continue
             selected_usages.setdefault(usage, []).append(obj)
         return selected_usages
+
+    @classmethod
+    def selected_ifc_types(cls):
+        selected_types = {}
+        for obj in tool.Blender.get_selected_objects():
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            ifc_type = element.is_a()  # Get the IFC type (e.g., IfcWall, IfcSlab, etc.)
+            selected_types.setdefault(ifc_type, []).append(obj)
+        return selected_types
 
 
 class ArrayData:
